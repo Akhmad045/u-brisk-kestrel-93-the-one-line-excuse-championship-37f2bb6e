@@ -30,6 +30,14 @@ def validate(text: str) -> list[str]:
         problems.append("leading or trailing white space")
     if "\n" in text or "\r" in text:
         problems.append("must be a single line")
+    # Invisible Unicode format characters would silently count toward
+    # the 140-char gate while being invisible to the judge's eye, so
+    # reject them outright instead of letting one slip into the entry.
+    invisible = {"\u200b", "\u200c", "\u200d", "\ufeff", "\u2060", "\u00ad"}
+    for ch in text:
+        if ch in invisible:
+            problems.append(f"invisible format character U+{ord(ch):04X}")
+            break
     for ch in text:
         if ord(ch) < 0x20 and ch not in ("\t",):
             problems.append(f"control character U+{ord(ch):04X}")
@@ -65,6 +73,8 @@ def self_test() -> int:
         (" lead", False),                  # leading white space
         ("trail ", False),                 # trailing white space
         ("bell\x07here", False),           # control character
+        ("zero\u200bwidth", False),         # invisible zero-width space
+        ("\ufeffbom", False),               # byte-order mark
     ]
     failures = 0
     for text, should_pass in cases:
